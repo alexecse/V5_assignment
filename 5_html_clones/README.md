@@ -48,3 +48,28 @@ Calculăm frecvența totală a fiecărui tag în toate fișierele.
 Reținem doar tagurile care apar de cel puțin min_total_freq ori (ex: 5).
 
 Reconstruim matricea doar cu tagurile păstrate.
+
+
+PROBLEME CURENTE: 2 aprilie 12:14 AM
+
+CUM DRACU SA VERIFIC AUTOMAT CA LE A GRUPAT BINE ALGORITMUL MEU? DACA AVEAM 1000 DE INPUTS ERAM MOOOOORT
+
+in tier 1 este chiar ok
+    inverted inseamna grupuri diferite??
+
+in tier2
+    group_0: creplace.com vs acco-semi.html
+
+in tier3
+    group_3:
+        - dvnbysarah.com.html nu are ce cauta acolo - arata diferit
+        - etawalinherbalmilk.site.html VS coade.icu.html - au aceeasi structura, limba diferita
+        - lagustosavaldebebas.com.html vs frankieswinebar.com.html (+ renewconsultants.com.html) - arata identic, sunt puse in grupe diferite...
+        - 
+in tier4
+    outliers: 
+        - este clar ca site-ul cu cazionul este o versiune mai avansata a paginilor din grupul 2. sunt similare clar
+
+
+
+vor oare sa adaug toate tier-urile si sa grupez pe fiecare in parte? sau sa iau paginile tuturor si sa returnez overall?
