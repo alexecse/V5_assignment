@@ -53,7 +53,7 @@ def chi2_distance_matrix(X, epsilon=1e-10):
 			D[i, j] = D[j, i] = d  # symmetric matrix
 	return D
 
-def integrate_outliers(labels, distance_matrix, html_files, threshold_merge = 2, threshold_attach = 3.5):
+def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, threshold_attach = 3.5):
 	n = len(html_files)
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -177,7 +177,7 @@ def group_similar_htmls(directory, eps=0.5, min_samples=2):
 	labels = clustering.fit_predict(chi2_dist)
 
 	# postprocesare - try and integrate the outliers
-	labels = integrate_outliers(labels, chi2_dist, html_files)
+	labels = postprocessing(labels, chi2_dist, html_files)
 
 	final_clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
