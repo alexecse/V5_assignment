@@ -10,6 +10,17 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
+from concurrent.futures import ThreadPoolExecutor
+
+
+def parallel_extract_tag_frequencies(html_files):
+    with ThreadPoolExecutor() as executor:
+        return list(tqdm(executor.map(extract_tag_frequency, html_files), total=len(html_files), desc="Extracting tag frequencies"))
+
+
+def parallel_extract_texts(html_files):
+    with ThreadPoolExecutor() as executor:
+        return list(tqdm(executor.map(extract_text_content, html_files), total=len(html_files), desc="Extracting text content"))
 
 
 def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
@@ -22,11 +33,16 @@ def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
 
     html_files = [os.path.join(directory, f) for f in os.listdir(directory)
                   if f.endswith('.html') and not f.startswith('._')]
-    counters = [extract_tag_frequency(f) for f in tqdm(html_files, desc=f"Parsing {directory}")]
+    
+    # Parallelized tag extraction
+    counters = parallel_extract_tag_frequencies(html_files)
     tag_matrix, tags = build_tag_matrix(counters)
 
+    # Parallelized text extraction
+    texts = parallel_extract_texts(html_files)
+
     chi2_dist = chi2_distance_matrix(tag_matrix)
-    textual_dist = compute_textual_similarity(html_files)
+    textual_dist = compute_textual_similarity(html_files, texts)
     combined_dist = combine_distances_dynamic(chi2_dist, textual_dist)
 
     clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')

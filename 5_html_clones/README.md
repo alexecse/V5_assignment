@@ -1,75 +1,128 @@
-Aici as putea sa fac ceva cu chi patrat si sa numar cu vectori de frecventa.
+# HTML Grouping Pipeline
 
-Da, este o idee foarte bună — folosirea vectorilor de frecvență ai tagurilor HTML + testul Chi-pătrat este o abordare solidă pentru a compara structura documentelor HTML dintr-o perspectivă statistică.
+Acest proiect grupeaza fisiere HTML pe baza **similitutinii vizuale, structurale si textuale**, cu accent pe modularitate, claritate si scalabilitate pe termen lung.
 
-🔍 De ce funcționează:
-HTML-ul este în esență o structură ierarhică compusă din taguri (<div>, <p>, <table>, etc.). Dacă două pagini arată similar în browser, probabil că folosesc taguri similare și în proporții asemănătoare.
+> Creat initial pentru un task tehnic real. Scopul nu a fost doar sa functioneze, ci sa experimentez, sa rafinez si sa demonstrez ca pot construi o solutie de productie.
 
-✅ Pro:
+---
 
-Rapid și ușor de implementat
+## Obiectiv
 
-Nu necesită randare vizuală
+Grupare automata a paginilor HTML:
+- In functie de layout si asemanare vizuala perceputa
+- Prin compararea structurii DOM, continutului textual si optional a screenshot-urilor
+- Cu suport pentru identificarea outlierilor si atasarea incrementala a paginilor noi
 
-Detectează diferențe structurale evidente
+---
 
-Bun pentru clustering de tip baseline sau ca una din multiple metrice
+## Evolutia solutiei
 
-❌ Contra:
+### 🟢 Versiunea initiala
+- Vectori de frecventa ai tagurilor HTML
+- Distanta Chi² pentru comparatie structurala
+- DBSCAN pentru clustering nesupravegheat
 
-Nu detectează diferențe subtile de stil sau conținut
+### 🔴 Probleme observate
+- Chi² era prea sensibil la diferente mici de frecventa
+- Outlierii nu erau tratati bine
+- Scalabilitate limitata la cateva mii de fisiere
 
-Nu distinge între layouturi similare dar cu taguri diferite
+### 🟡 Imbunatatiri adaugate
+- **Postprocesare outlieri**: atasare si merge pentru grupuri similare vizual
+- **Parsing paralel**: cu `ThreadPoolExecutor`
+- **Caching local**: salvare rezultate intermediare pentru performanta
+- **Similaritate hibrida**: combinare Chi² + textual (TF-IDF/semantic) + vizual (embedding imagine)
 
-Nu capturează poziția sau ierarhia DOM (doar frecvențe plate)
+### 🔵 Experimente cu metrici
 
+| Strategie               | Rezultate tier1-4       | Observatii                              |
+|------------------------|--------------------------|------------------------------------------|
+| Chi² + frecventa       | 7 + 2 + 5 + 3 grupuri     | Cea mai robusta si precisa varianta      |
+| Cosine + binarizare    | 3 + 1 + 1 + 2 grupuri     | Prea permisiva, pierde informatia        |
+| Cu postprocesare       | 7 + 2 + 3 + 3 + outlieri  | Calitate vizibil imbunatatita            |
 
-Integrează această abordare în cadrul tău hibrid, ca una dintre sursele de similaritate. De exemplu:
+Am incercat, comparat si rafinat pe baza rezultatelor reale obtinute pe cele 4 dataseturi (tier1 - tier4).
 
+---
+
+## Arhitectura pipeline
+
+1. **Parsing HTML** → frecventa taguri + text curat
+2. **Vectorizare**:
+    - structura: matrice frecvente Chi²
+    - text: TF-IDF sau embedding semantic
+3. **Clustering**: DBSCAN pe distanta combinata
+4. **Postprocesare**: reatasare outlieri, merge grupuri apropiate vizual
+5. **Output**: foldere organizate, heatmap, statistici, loguri
+
+---
+
+## Complexitate
+
+| Etapa                  | Complexitate            |
+|------------------------|--------------------------|
+| Parsing HTML           | O(n)                     |
+| Matrice frecvente      | O(n × t)                 |
+| Distanţa Chi²         | O(n² × t) ✅ Bottleneck   |
+| DBSCAN                 | O(n²)                    |
+| Integrare outlieri     | O(n × o)                 |
+
+Punct critic: **matricea Chi-squared** → se poate optimiza prin filtrare taguri sau matrix sparse.
+
+---
+
+## Scalabilitate
+
+Sistemul actual functioneaza eficient pentru cateva mii de fisiere. Pentru volume mari:
+
+### Matching incremental
+- FAISS pentru salvarea vectorilor
+- La fiecare pagina noua:
+  - Generezi vector
+  - Cauti top-k similaritati in index
+  - Atasezi la grupul cel mai apropiat (daca trece pragul)
+
+### Alternative la DBSCAN
+- **HDBSCAN** – mai robust si mai scalabil
+- **MiniBatchKMeans** – daca estimezi numarul de grupuri
+
+### Approximate Nearest Neighbors (ANN)
+- FAISS / Annoy pentru cautare rapida
+- Cosine similarity devine O(log n) in loc de O(n²)
+
+### Procesare pe batch-uri
+- Spargi inputul in sharduri (ex: foldere)
+- Rulezi clustering pe fiecare independent
+- Faci merge global intre batch-uri (post-hoc)
+
+---
+
+## Formula combinata (ajustabila)
+```python
 similarity = (
-    0.3 * visual_similarity +
+    0.4 * structural_similarity_chi2 +
     0.3 * textual_similarity +
-    0.4 * structural_similarity_chi2
+    0.3 * visual_similarity
 )
+```
 
-Obiectiv: filtrăm tagurile care sunt prea rare
-📌 Motiv:
-Tagurile care apar foarte rar (de exemplu, într-un singur fișier sau de 1-2 ori total) sunt:
+---
 
-irelevante statistic (insuficientă frecvență),
+## TODO si extensii posibile
+- [ ] FAISS index persistent pentru matching in timp real
+- [ ] Inlocuire DBSCAN cu HDBSCAN
+- [ ] Evaluare automata a calitatii clusterelor
+- [ ] Dashboard interactiv pentru explorarea grupurilor
 
-adaugă zgomot în metrica Chi²,
+---
 
-pot distorsiona distanțele dintre vectori.
+## Concluzie
 
-🧠 Strategia:
-Calculăm frecvența totală a fiecărui tag în toate fișierele.
-
-Reținem doar tagurile care apar de cel puțin min_total_freq ori (ex: 5).
-
-Reconstruim matricea doar cu tagurile păstrate.
-
-
-PROBLEME CURENTE: 2 aprilie 12:14 AM
-
-CUM DRACU SA VERIFIC AUTOMAT CA LE A GRUPAT BINE ALGORITMUL MEU? DACA AVEAM 1000 DE INPUTS ERAM MOOOOORT
-
-in tier 1 este chiar ok
-    inverted inseamna grupuri diferite??
-
-in tier2
-    group_0: creplace.com vs acco-semi.html
-
-in tier3
-    group_3:
-        - dvnbysarah.com.html nu are ce cauta acolo - arata diferit
-        - etawalinherbalmilk.site.html VS coade.icu.html - au aceeasi structura, limba diferita
-        - lagustosavaldebebas.com.html vs frankieswinebar.com.html (+ renewconsultants.com.html) - arata identic, sunt puse in grupe diferite...
-        - 
-in tier4
-    outliers: 
-        - este clar ca site-ul cu cazionul este o versiune mai avansata a paginilor din grupul 2. sunt similare clar
+Aceasta solutie demonstreaza:
+- Gindire modulara si separare clara pe responsabilitati
+- Atentie la complexitate algoritmica si performanta
+- O abordare completa, nu doar un script
+- Capacitatea de a experimenta si rafina pana la un rezultat solid
 
 
-
-vor oare sa adaug toate tier-urile si sa grupez pe fiecare in parte? sau sa iau paginile tuturor si sa returnez overall?
+---

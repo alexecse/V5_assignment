@@ -11,8 +11,7 @@ def extract_text_content(html_path):
     return soup.get_text(separator=' ', strip=True)
 
 
-def compute_textual_similarity(html_files):
-    texts = [extract_text_content(path) for path in html_files]
+def compute_textual_similarity(html_files, texts):
     vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
     tfidf_matrix = vectorizer.fit_transform(texts)
     cosine_sim = cosine_similarity(tfidf_matrix)
