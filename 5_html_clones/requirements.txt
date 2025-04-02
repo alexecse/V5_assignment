@@ -1,0 +1,12 @@
+beautifulsoup4
+lxml
+numpy
+pandas
+scikit-learn
+seaborn
+matplotlib
+torch
+torchvision
+tqdm
+sentence-transformers
+playwright
