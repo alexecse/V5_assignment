@@ -1,7 +1,6 @@
 import os
 import csv
 import shutil
-import hdbscan
 from tqdm import tqdm
 from bs4 import BeautifulSoup
 import numpy as np
@@ -148,7 +147,7 @@ def compute_textual_similarity(html_files):
 # threshold_attach >6 devine ft permisiv
 # threshold_merge > 20 avantajos pentru site-uri mai complicate. s-ar da merge mult la site-uri simple (tier1) si nu ar fi avantajos
 # merge cercetat daca e chiar intr-ajutorul site-urilor complexe
-def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=1):
+def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=0):
 	n = len(html_files)
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -318,16 +317,8 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 
 	# Combine structural and textual distances
 	combined_dist = combine_distances_dynamic(chi2_dist, textual_dist)
-	
-	# hbdscan eneds float64
-	combined_dist = combined_dist.astype(np.float64)
-
 	# Perform DBSCAN clustering
-	# clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
-	# labels = clustering.fit_predict(combined_dist)
-
-	# Perform HDBSCAN clustering
-	clustering = hdbscan.HDBSCAN(metric='precomputed', min_cluster_size=2)
+	clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
 	labels = clustering.fit_predict(combined_dist)
 
 	# Postprocessing - try and integrate the outliers
@@ -399,4 +390,4 @@ if __name__ == "__main__":
 	# for tier in ['./test_clones']:
 	for tier in ['./clones/tier1', './clones/tier2', './clones/tier3', './clones/tier4']:
 		print(f"Grouping for: {tier}")
-		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=0)
+		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=1)
