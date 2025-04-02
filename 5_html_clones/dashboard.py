@@ -60,6 +60,7 @@ def main():
     selected_tier = st.sidebar.selectbox("Select a tier", sorted(groups.keys()))
     selected_group = st.sidebar.selectbox("Select a group", sorted(groups[selected_tier].keys()))
 
+    tier_path = os.path.join(OUTPUT_DIR, selected_tier)
     group_path = os.path.join(OUTPUT_DIR, selected_tier, selected_group)
     file_list = sorted(groups[selected_tier][selected_group])
     file_paths = [os.path.join(group_path, f) for f in file_list]
@@ -80,10 +81,11 @@ def main():
 
     # File selector
     selected_file = st.selectbox("Select an HTML file to preview", file_list)
-    selected_file_path = os.path.join(group_path, selected_file)
+    selected_file_path = os.path.join(tier_path, selected_file)
 
     display_html_preview(selected_tier, selected_group, selected_file)
-    log_path = os.path.join(group_path, "postprocessing.log")
+    
+    log_path = os.path.join(tier_path, "postprocessing.log")
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
             logs = f.read().splitlines()
@@ -97,7 +99,7 @@ def main():
         st.info("No postprocessing log found for this group.")
 
     # Stats section
-    stats_path = os.path.join(group_path, "postprocessing_stats.csv")
+    stats_path = os.path.join(tier_path, "postprocessing_stats.csv")
     if os.path.exists(stats_path):
         st.markdown("### Postprocessing Statistics")
         df_stats = pd.read_csv(stats_path)

@@ -1,5 +1,7 @@
 import os
+import csv
 import shutil
+import hdbscan
 from tqdm import tqdm
 from bs4 import BeautifulSoup
 import numpy as np
@@ -12,9 +14,53 @@ from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter, Counter as CountLabels
 from collections import defaultdict
 
+from torchvision import models, transforms
+from PIL import Image
+import torch
+
+from playwright.sync_api import sync_playwright
+
+def generate_screenshot_if_missing(html_path, output_folder="screenshots"):
+    os.makedirs(output_folder, exist_ok=True)
+    filename = os.path.basename(html_path) + ".png"
+    output_path = os.path.join(output_folder, filename)
+    if os.path.exists(output_path):
+        return
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            page.goto("file://" + os.path.abspath(html_path), wait_until="load", timeout=10000)
+            page.screenshot(path=output_path, full_page=True)
+            browser.close()
+    except Exception as e:
+        print(f"Could not generate screenshot for {html_path}: {e}")
+
+
+# Visual model (EfficientNetB0) for image embeddings
+visual_model = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1).eval()
+preprocess = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+])
+
+def image_embedding(path):
+	try:
+		img = Image.open(path).convert("RGB")
+		img_tensor = preprocess(img).unsqueeze(0)
+		with torch.no_grad():
+			features = visual_model.features(img_tensor)
+			pooled = torch.nn.functional.adaptive_avg_pool2d(features, (1, 1))
+			return pooled.view(-1).numpy()
+	except Exception as e:
+		print("⚠️ Fallback image embedding failed:", e)
+		return np.zeros(1280)
+
 # Extract frequency of HTML tags from a file
 def extract_tag_frequency(html_path):
-	USELESS_TAGS = {'script', 'style', 'svg', 'link', 'meta', 'noscript', 'defs', 'filter'}
+	# USELESS_TAGS = {'script', 'style', 'svg', 'link', 'meta', 'noscript', 'defs', 'filter'}
+	USELESS_TAGS = {'svg', 'link', 'meta', 'noscript', 'defs', 'filter'}
 
 	with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
 		# Parse the HTML content using the lxml parser
@@ -102,7 +148,7 @@ def compute_textual_similarity(html_files):
 # threshold_attach >6 devine ft permisiv
 # threshold_merge > 20 avantajos pentru site-uri mai complicate. s-ar da merge mult la site-uri simple (tier1) si nu ar fi avantajos
 # merge cercetat daca e chiar intr-ajutorul site-urilor complexe
-def postprocessing(labels, distance_matrix, html_files, threshold_merge=2, threshold_attach=6, can_print=1):
+def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=1):
 	n = len(html_files)
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -151,17 +197,17 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=2, thres
 
 		diff = min_dist - threshold_attach
 		if diff <= 0.05:
-			log(f"  → ⚠ Outlier is very close! (only {diff:.4f} above threshold)")
+			log(f"Outlier close (only {abs(diff):.4f} below threshold)")
 		elif diff <= 0.15:
-			log(f"  → ℹ Consider lowering threshold slightly if you want it attached.")
+			log(f"!!! Consider lowering threshold slightly if you want it attached.")
 
 		if min_dist <= threshold_attach:
-			log(f"  ✓ Attached to group {closest_group}\n")
+			log(f" - Attached to group {closest_group}\n")
 			clusters[closest_group].append(idx)
 			assigned_outliers.append(idx)
 			stats["attached_outliers"] += 1
 		else:
-			log(f"  ✗ Kept as outlier\n")
+			log(f" - Kept as outlier\n")
 
 	remaining_outliers = [idx for idx in outlier_indices if idx not in assigned_outliers]
 	stats["final_outliers"] = len(remaining_outliers)
@@ -190,13 +236,30 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=2, thres
 			log(f"[MERGE DEBUG] Group {label_i} ↔ Group {label_j} → avg_dist = {avg_dist:.4f}")
 
 			if avg_dist <= threshold_merge:
-				log(f"  ✓ Merged group {label_j} into group {label_i}\n")
-				clusters[label_i].extend(clusters[label_j])
-				merged.add(label_j)
-				label_mapping[label_j] = label_i
-				stats["group_merges"] += 1
+				html_path1 = html_files[members_i[0]]
+				html_path2 = html_files[members_j[0]]
+
+				generate_screenshot_if_missing(html_path1)
+				generate_screenshot_if_missing(html_path2)
+
+				ss1 = os.path.join("screenshots", os.path.basename(html_path1) + ".png")
+				ss2 = os.path.join("screenshots", os.path.basename(html_path2) + ".png")
+
+				emb1 = image_embedding(ss1)
+				emb2 = image_embedding(ss2)
+				visual_sim = cosine_similarity([emb1], [emb2])[0][0]
+
+				log(f"  [VISUAL EMBEDDING] Cosine similarity = {visual_sim:.4f}")
+				if visual_sim > 0.93:
+					log(f"  :) Visually similar => merge")
+					clusters[label_i].extend(clusters[label_j])
+					merged.add(label_j)
+					label_mapping[label_j] = label_i
+					stats["group_merges"] += 1
+				else:
+					log(f"  x Not merged (visual similarity too low)\n")
 			else:
-				log(f"  ✗ Not merged (avg_dist > threshold)\n")
+				log(f"  Not merged (distance > limit)\n")
 
 	new_labels = np.full(n, -1)
 	current_label = 0
@@ -218,18 +281,15 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=2, thres
 
 	return new_labels, stats, log_messages
 
-def save_logs(log_messages, output_dir, label):
-	group_folder = os.path.join(output_dir, f"group_{label}" if label != -1 else "outliers")
-	os.makedirs(group_folder, exist_ok=True)
-	log_file = os.path.join(group_folder, "postprocessing.log")
+def save_logs(log_messages, output_dir):
+	os.makedirs(output_dir, exist_ok=True)
+	log_file = os.path.join(output_dir, "postprocessing.log")
 	with open(log_file, "w", encoding="utf-8") as f:
 		f.write("\n".join(log_messages))
 
-def save_stats(stats, output_dir, label):
-	import csv
-	group_folder = os.path.join(output_dir, f"group_{label}" if label != -1 else "outliers")
-	os.makedirs(group_folder, exist_ok=True)
-	stats_file = os.path.join(group_folder, "postprocessing_stats.csv")
+def save_stats(stats, output_dir):
+	os.makedirs(output_dir, exist_ok=True)
+	stats_file = os.path.join(output_dir, "postprocessing_stats.csv")
 	with open(stats_file, "w", newline="", encoding="utf-8") as csvfile:
 		writer = csv.writer(csvfile)
 		writer.writerow(["metric", "value"])
@@ -258,8 +318,16 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 
 	# Combine structural and textual distances
 	combined_dist = combine_distances_dynamic(chi2_dist, textual_dist)
+	
+	# hbdscan eneds float64
+	combined_dist = combined_dist.astype(np.float64)
+
 	# Perform DBSCAN clustering
-	clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
+	# clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
+	# labels = clustering.fit_predict(combined_dist)
+
+	# Perform HDBSCAN clustering
+	clustering = hdbscan.HDBSCAN(metric='precomputed', min_cluster_size=2)
 	labels = clustering.fit_predict(combined_dist)
 
 	# Postprocessing - try and integrate the outliers
@@ -267,9 +335,8 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 		labels, stats, logs = postprocessing(labels, combined_dist, html_files)
 
 		# Save logs for each group
-		for label in set(labels):
-			save_logs(logs, output_dir, label)
-			save_stats(stats, output_dir, label)
+		save_logs(logs, output_dir)
+		save_stats(stats, output_dir)
 
 	final_clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -332,4 +399,4 @@ if __name__ == "__main__":
 	# for tier in ['./test_clones']:
 	for tier in ['./clones/tier1', './clones/tier2', './clones/tier3', './clones/tier4']:
 		print(f"Grouping for: {tier}")
-		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=1)
+		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=0)
