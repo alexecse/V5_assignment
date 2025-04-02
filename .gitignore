@@ -1,0 +1,54 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# MacOS
+.DS_Store
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.bak
+
+# Test coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# pip tools
+pip-log.txt
+pip-delete-this-directory.txt
+
+# MyPy / Pyright / other type checkers
+.mypy_cache/
+.pyright/
+
+# Pytest
+.pytest_cache/
+
+# dotenv
+*.env

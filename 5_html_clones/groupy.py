@@ -148,6 +148,7 @@ def compute_textual_similarity(html_files):
 # threshold_merge > 20 avantajos pentru site-uri mai complicate. s-ar da merge mult la site-uri simple (tier1) si nu ar fi avantajos
 # merge cercetat daca e chiar intr-ajutorul site-urilor complexe
 def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=0):
+	print("	Postprocessing...")
 	n = len(html_files)
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -295,7 +296,8 @@ def save_stats(stats, output_dir):
 		for key, value in stats.items():
 			writer.writerow([key, value])
 
-def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
+# does postprocessing unless specifed otherwise
+def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
 	# Create the output/ and statistics/ directories
 	tier_name = os.path.basename(directory.strip("/"))
 	output_dir = os.path.join("output", tier_name)
@@ -368,7 +370,7 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 		if label != -1:
 			grouped_count += 1
 
-	print(f"Grupuri salvate în {output_dir}: {len([k for k in clusters if k != -1])} grupuri, {len(clusters.get(-1, []))} outlieri")
+	print(f"	Pages grouped in {output_dir}: {len([k for k in clusters if k != -1])} groups, {len(clusters.get(-1, []))} stand-alone pages (outliers)")
 
 	# Prepare heatmap labels (filename + group)
 	filenames = [os.path.basename(f) for f in html_files]
@@ -390,4 +392,4 @@ if __name__ == "__main__":
 	# for tier in ['./test_clones']:
 	for tier in ['./clones/tier1', './clones/tier2', './clones/tier3', './clones/tier4']:
 		print(f"Grouping for: {tier}")
-		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=1)
+		group_similar_htmls(tier, eps=2, min_samples=2, do_postprocessing=1)
