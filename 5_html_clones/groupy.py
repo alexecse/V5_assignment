@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer
 from collections import Counter, Counter as CountLabels
 from collections import defaultdict
 
@@ -62,29 +61,29 @@ def chi2_distance_matrix(X, epsilon=1e-10):
 	return D
 
 def compute_semantic_similarity(html_files):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    texts = [extract_text_content(path) for path in html_files]
-    embeddings = model.encode(texts, show_progress_bar=True)
-    cos_sim = cosine_similarity(embeddings)
-    textual_dist = 1 - cos_sim
-    textual_dist[textual_dist < 0] = 0
-    return textual_dist
+	model = SentenceTransformer('all-MiniLM-L6-v2')
+	texts = [extract_text_content(path) for path in html_files]
+	embeddings = model.encode(texts, show_progress_bar=True)
+	cos_sim = cosine_similarity(embeddings)
+	textual_dist = 1 - cos_sim
+	textual_dist[textual_dist < 0] = 0
+	return textual_dist
 
 def combine_distances_dynamic(chi2_dist, textual_dist, alpha_range=(0.2, 0.8)):
-    n = chi2_dist.shape[0]
-    combined_dist = np.zeros_like(chi2_dist)
-    for i in range(n):
-        for j in range(n):
-            chi2_val = chi2_dist[i, j]
-            text_val = textual_dist[i, j]
-            if chi2_val < 1.0:
-                alpha = alpha_range[0]
-            elif chi2_val > 3.0:
-                alpha = alpha_range[1]
-            else:
-                alpha = np.interp(chi2_val, [1.0, 3.0], alpha_range)
-            combined_dist[i, j] = alpha * chi2_val + (1 - alpha) * text_val
-    return combined_dist
+	n = chi2_dist.shape[0]
+	combined_dist = np.zeros_like(chi2_dist)
+	for i in range(n):
+		for j in range(n):
+			chi2_val = chi2_dist[i, j]
+			text_val = textual_dist[i, j]
+			if chi2_val < 1.0:
+				alpha = alpha_range[0]
+			elif chi2_val > 3.0:
+				alpha = alpha_range[1]
+			else:
+				alpha = np.interp(chi2_val, [1.0, 3.0], alpha_range)
+			combined_dist[i, j] = alpha * chi2_val + (1 - alpha) * text_val
+	return combined_dist
 
 def compute_textual_similarity(html_files):
 	texts = [extract_text_content(path) for path in html_files]
@@ -100,21 +99,37 @@ def compute_textual_similarity(html_files):
 
 	return textual_dist
 
-def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, threshold_attach = 3.5):
+# threshold_attach >6 devine ft permisiv
+# threshold_merge > 20 avantajos pentru site-uri mai complicate. s-ar da merge mult la site-uri simple (tier1) si nu ar fi avantajos
+# merge cercetat daca e chiar intr-ajutorul site-urilor complexe
+def postprocessing(labels, distance_matrix, html_files, threshold_merge=2, threshold_attach=6, can_print=1):
 	n = len(html_files)
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
 		clusters[label].append(idx)
 	clusters = dict(clusters)
 
-	# 1. Procesare outlieri
+	log_messages = []
+	def log(msg):
+		if can_print:
+			print(msg)
+		log_messages.append(msg)
+
 	outlier_indices = clusters.get(-1, [])
 	assigned_outliers = []
+	stats = {
+		"initial_outliers": len(outlier_indices),
+		"attached_outliers": 0,
+		"final_outliers": 0,
+		"group_merges": 0,
+		"total_groups_before": len([l for l in clusters if l != -1]),
+		"total_groups_after": 0
+	}
 
 	if outlier_indices:
-		print("Outliers found:", [os.path.basename(html_files[i]) for i in outlier_indices])
+		log("Outliers found: " + str([os.path.basename(html_files[i]) for i in outlier_indices]))
 	else:
-		print("No outliers found.")
+		log("No outliers found.")
 
 	for idx in outlier_indices:
 		dists = []
@@ -130,30 +145,31 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, thr
 		closest_group, min_dist = min(dists, key=lambda x: x[1])
 		filename = os.path.basename(html_files[idx])
 
-		print(f"[OUTLIER DEBUG] {filename} → Closest group: {closest_group}")
-		print(f"  - Avg distance to group: {min_dist:.4f}")
-		print(f"  - Threshold (attach):    {threshold_attach:.4f}")
+		log(f"[OUTLIER DEBUG] {filename} → Closest group: {closest_group}")
+		log(f"  - Avg distance to group: {min_dist:.4f}")
+		log(f"  - Threshold (attach):    {threshold_attach:.4f}")
+
 		diff = min_dist - threshold_attach
 		if diff <= 0.05:
-			print(f"  → ⚠ Outlier is very close! (only {diff:.4f} above threshold)")
+			log(f"  → ⚠ Outlier is very close! (only {diff:.4f} above threshold)")
 		elif diff <= 0.15:
-			print(f"  → ℹ Consider lowering threshold slightly if you want it attached.")
+			log(f"  → ℹ Consider lowering threshold slightly if you want it attached.")
 
 		if min_dist <= threshold_attach:
-			print(f"  ✓ Attached to group {closest_group}\n")
+			log(f"  ✓ Attached to group {closest_group}\n")
 			clusters[closest_group].append(idx)
 			assigned_outliers.append(idx)
+			stats["attached_outliers"] += 1
 		else:
-			print(f"  ✗ Kept as outlier\n")
+			log(f"  ✗ Kept as outlier\n")
 
-	# Păstrăm outlierii care n-au fost atașați
 	remaining_outliers = [idx for idx in outlier_indices if idx not in assigned_outliers]
+	stats["final_outliers"] = len(remaining_outliers)
 	if remaining_outliers:
 		clusters[-1] = remaining_outliers
 	elif -1 in clusters:
 		del clusters[-1]
 
-	# 2. Fuzionare grupuri similare
 	group_labels = [l for l in clusters if l != -1]
 	merged = set()
 	label_mapping = {}
@@ -171,16 +187,17 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, thr
 			all_dists = [distance_matrix[a][b] for a in members_i for b in members_j]
 			avg_dist = np.mean(all_dists)
 
-			print(f"[MERGE DEBUG] Group {label_i} ↔ Group {label_j} → avg_dist = {avg_dist:.4f}")
+			log(f"[MERGE DEBUG] Group {label_i} ↔ Group {label_j} → avg_dist = {avg_dist:.4f}")
+
 			if avg_dist <= threshold_merge:
-				print(f"  ✓ Merged group {label_j} into group {label_i}\n")
+				log(f"  ✓ Merged group {label_j} into group {label_i}\n")
 				clusters[label_i].extend(clusters[label_j])
 				merged.add(label_j)
 				label_mapping[label_j] = label_i
+				stats["group_merges"] += 1
 			else:
-				print(f"  ✗ Not merged (avg_dist > threshold)\n")
+				log(f"  ✗ Not merged (avg_dist > threshold)\n")
 
-	# Regenerăm etichetele coerent
 	new_labels = np.full(n, -1)
 	current_label = 0
 	label_map = {}
@@ -188,9 +205,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, thr
 	for old_label in sorted(clusters.keys()):
 		if old_label in merged:
 			continue
-
 		if old_label == -1:
-			# păstrăm -1 ca etichetă pentru outlieri nealocați
 			for idx in clusters[old_label]:
 				new_labels[idx] = -1
 		else:
@@ -199,7 +214,27 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, thr
 			label_map[old_label] = current_label
 			current_label += 1
 
-	return new_labels
+	stats["total_groups_after"] = current_label
+
+	return new_labels, stats, log_messages
+
+def save_logs(log_messages, output_dir, label):
+	group_folder = os.path.join(output_dir, f"group_{label}" if label != -1 else "outliers")
+	os.makedirs(group_folder, exist_ok=True)
+	log_file = os.path.join(group_folder, "postprocessing.log")
+	with open(log_file, "w", encoding="utf-8") as f:
+		f.write("\n".join(log_messages))
+
+def save_stats(stats, output_dir, label):
+	import csv
+	group_folder = os.path.join(output_dir, f"group_{label}" if label != -1 else "outliers")
+	os.makedirs(group_folder, exist_ok=True)
+	stats_file = os.path.join(group_folder, "postprocessing_stats.csv")
+	with open(stats_file, "w", newline="", encoding="utf-8") as csvfile:
+		writer = csv.writer(csvfile)
+		writer.writerow(["metric", "value"])
+		for key, value in stats.items():
+			writer.writerow([key, value])
 
 def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 	# Create the output/ and statistics/ directories
@@ -214,10 +249,10 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 	html_files = [os.path.join(directory, f) for f in os.listdir(directory)
 				  if f.endswith('.html') and not f.startswith('._')]
 	counters = [extract_tag_frequency(f) for f in tqdm(html_files, desc=f"Parsing {directory}")]
-	matrix, tags = build_tag_matrix(counters)
+	tag_matrix, tags = build_tag_matrix(counters)
 
 	# Compute Chi-squared distance matrix
-	chi2_dist = chi2_distance_matrix(matrix)
+	chi2_dist = chi2_distance_matrix(tag_matrix)
 	# Compute textual distance
 	textual_dist = compute_textual_similarity(html_files)
 
@@ -227,9 +262,14 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 	clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
 	labels = clustering.fit_predict(combined_dist)
 
-	# postprocesare - try and integrate the outliers
-	if do_postprocessing: 
-		labels = postprocessing(labels, chi2_dist, html_files)
+	# Postprocessing - try and integrate the outliers
+	if do_postprocessing:
+		labels, stats, logs = postprocessing(labels, combined_dist, html_files)
+
+		# Save logs for each group
+		for label in set(labels):
+			save_logs(logs, output_dir, label)
+			save_stats(stats, output_dir, label)
 
 	final_clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -249,22 +289,6 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 	grouped_count = sum(1 for label in final_clusters if label != -1)
 	outlier_count = len(final_clusters.get(-1, []))
 	total_files = len(html_files)
-
-	# Prepare heatmap labels (filename + group)
-	filenames = [os.path.basename(f) for f in html_files]
-	cluster_labels = ['outlier' if lbl == -1 else f'group_{lbl}' for lbl in labels]
-	y_labels = [f"{name} ({group})" for name, group in zip(filenames, cluster_labels)]
-
-	# Heatmap with tag frequency and cluster labels
-	plt.figure(figsize=(14, max(6, len(y_labels) * 0.2)))
-	sns.heatmap(matrix, cmap='YlGnBu', xticklabels=tags, yticklabels=y_labels)
-	plt.title("HTML Tag Frequency per File")
-	plt.xlabel("HTML Tags")
-	plt.ylabel("Files")
-	plt.yticks(rotation=0, fontsize=8)
-	plt.tight_layout()
-	plt.savefig(os.path.join(stats_dir, f"{tier_name}_tag_frequency_heatmap.png"))
-	plt.close()
 
 	# Group HTML files into folders
 	clusters = {}
@@ -286,10 +310,23 @@ def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 		if label != -1:
 			grouped_count += 1
 
-	total_files = len(html_files)
-	outlier_count = len(clusters.get(-1, []))
-	print(f"Saved groups in {output_dir}: {grouped_count} groups + {outlier_count}/{total_files} outliers")
+	print(f"Grupuri salvate în {output_dir}: {len([k for k in clusters if k != -1])} grupuri, {len(clusters.get(-1, []))} outlieri")
 
+	# Prepare heatmap labels (filename + group)
+	filenames = [os.path.basename(f) for f in html_files]
+	cluster_labels = ['outlier' if lbl == -1 else f'group_{lbl}' for lbl in labels]
+	y_labels = [f"{name} ({group})" for name, group in zip(filenames, cluster_labels)]
+
+	# Heatmap with tag frequency and cluster labels
+	plt.figure(figsize=(14, max(6, len(y_labels) * 0.2)))
+	sns.heatmap(tag_matrix, cmap='YlGnBu', xticklabels=tags, yticklabels=y_labels)
+	plt.title("HTML Tag Frequency per File")
+	plt.xlabel("HTML Tags")
+	plt.ylabel("Files")
+	plt.yticks(rotation=0, fontsize=8)
+	plt.tight_layout()
+	plt.savefig(os.path.join(stats_dir, f"{tier_name}_tag_frequency_heatmap.png"))
+	plt.close()
 
 if __name__ == "__main__":
 	# for tier in ['./test_clones']:

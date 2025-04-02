@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from PIL import Image
 from collections import Counter
 import numpy as np
+import pandas as pd
 import streamlit.components.v1 as components
 
 OUTPUT_DIR = "output"
@@ -82,6 +83,28 @@ def main():
     selected_file_path = os.path.join(group_path, selected_file)
 
     display_html_preview(selected_tier, selected_group, selected_file)
+    log_path = os.path.join(group_path, "postprocessing.log")
+    if os.path.exists(log_path):
+        with open(log_path, "r", encoding="utf-8") as f:
+            logs = f.read().splitlines()
+
+        with st.expander("Postprocessing Logs"):
+            for line in logs:
+                st.markdown(f"• `{line}`")
+
+        st.download_button("Download logs", "\n".join(logs), file_name="postprocessing.log")
+    else:
+        st.info("No postprocessing log found for this group.")
+
+    # Stats section
+    stats_path = os.path.join(group_path, "postprocessing_stats.csv")
+    if os.path.exists(stats_path):
+        st.markdown("### Postprocessing Statistics")
+        df_stats = pd.read_csv(stats_path)
+        st.dataframe(df_stats, use_container_width=True)
+        st.download_button("Download stats", df_stats.to_csv(index=False), file_name="postprocessing_stats.csv")
+    else:
+        st.info("No postprocessing statistics file found for this group.")
 
 
 if __name__ == "__main__":
