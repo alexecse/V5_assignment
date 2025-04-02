@@ -9,17 +9,25 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 from collections import Counter, Counter as CountLabels
 from collections import defaultdict
 
 # Extract frequency of HTML tags from a file
 def extract_tag_frequency(html_path):
+	USELESS_TAGS = {'script', 'style', 'svg', 'link', 'meta', 'noscript', 'defs', 'filter'}
+
 	with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
 		# Parse the HTML content using the lxml parser
 		soup = BeautifulSoup(f, 'lxml')
 
-	tags = [tag.name for tag in soup.find_all()]
+	tags = [tag.name for tag in soup.find_all() if tag.name not in USELESS_TAGS]
 	return Counter(tags)
+
+def extract_text_content(html_path):
+	with open(html_path, 'r', encoding='utf-8', errors='ignore') as f:
+		soup = BeautifulSoup(f, 'lxml')
+	return soup.get_text(separator=' ', strip=True)
 
 # Build a tag frequency matrix for a list of HTML files
 def build_tag_matrix(counters, min_total_freq = 5):
@@ -52,6 +60,45 @@ def chi2_distance_matrix(X, epsilon=1e-10):
 			d = 0.5 * np.sum(((X[i] - X[j]) ** 2) / (X[i] + X[j] + epsilon))
 			D[i, j] = D[j, i] = d  # symmetric matrix
 	return D
+
+def compute_semantic_similarity(html_files):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    texts = [extract_text_content(path) for path in html_files]
+    embeddings = model.encode(texts, show_progress_bar=True)
+    cos_sim = cosine_similarity(embeddings)
+    textual_dist = 1 - cos_sim
+    textual_dist[textual_dist < 0] = 0
+    return textual_dist
+
+def combine_distances_dynamic(chi2_dist, textual_dist, alpha_range=(0.2, 0.8)):
+    n = chi2_dist.shape[0]
+    combined_dist = np.zeros_like(chi2_dist)
+    for i in range(n):
+        for j in range(n):
+            chi2_val = chi2_dist[i, j]
+            text_val = textual_dist[i, j]
+            if chi2_val < 1.0:
+                alpha = alpha_range[0]
+            elif chi2_val > 3.0:
+                alpha = alpha_range[1]
+            else:
+                alpha = np.interp(chi2_val, [1.0, 3.0], alpha_range)
+            combined_dist[i, j] = alpha * chi2_val + (1 - alpha) * text_val
+    return combined_dist
+
+def compute_textual_similarity(html_files):
+	texts = [extract_text_content(path) for path in html_files]
+	
+	vectorizer = TfidfVectorizer(stop_words='english', max_features=1000)
+	
+	tfidf_matrix = vectorizer.fit_transform(texts)
+	
+	cosine_sim = cosine_similarity(tfidf_matrix)
+
+	textual_dist = 1 - cosine_sim
+	textual_dist[textual_dist < 0] = 0
+
+	return textual_dist
 
 def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, threshold_attach = 3.5):
 	n = len(html_files)
@@ -154,7 +201,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge = 2, thr
 
 	return new_labels
 
-def group_similar_htmls(directory, eps=0.5, min_samples=2):
+def group_similar_htmls(directory, eps, min_samples=2, do_postprocessing=1):
 	# Create the output/ and statistics/ directories
 	tier_name = os.path.basename(directory.strip("/"))
 	output_dir = os.path.join("output", tier_name)
@@ -171,13 +218,18 @@ def group_similar_htmls(directory, eps=0.5, min_samples=2):
 
 	# Compute Chi-squared distance matrix
 	chi2_dist = chi2_distance_matrix(matrix)
+	# Compute textual distance
+	textual_dist = compute_textual_similarity(html_files)
 
+	# Combine structural and textual distances
+	combined_dist = combine_distances_dynamic(chi2_dist, textual_dist)
 	# Perform DBSCAN clustering
 	clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
-	labels = clustering.fit_predict(chi2_dist)
+	labels = clustering.fit_predict(combined_dist)
 
 	# postprocesare - try and integrate the outliers
-	labels = postprocessing(labels, chi2_dist, html_files)
+	if do_postprocessing: 
+		labels = postprocessing(labels, chi2_dist, html_files)
 
 	final_clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
@@ -197,7 +249,6 @@ def group_similar_htmls(directory, eps=0.5, min_samples=2):
 	grouped_count = sum(1 for label in final_clusters if label != -1)
 	outlier_count = len(final_clusters.get(-1, []))
 	total_files = len(html_files)
-	print(f"Saved groups in {output_dir}: {grouped_count} groups + {outlier_count}/{total_files} outliers")
 
 	# Prepare heatmap labels (filename + group)
 	filenames = [os.path.basename(f) for f in html_files]
@@ -244,4 +295,4 @@ if __name__ == "__main__":
 	# for tier in ['./test_clones']:
 	for tier in ['./clones/tier1', './clones/tier2', './clones/tier3', './clones/tier4']:
 		print(f"Grouping for: {tier}")
-		group_similar_htmls(tier, eps=1.0, min_samples=2)
+		group_similar_htmls(tier, eps = 3, min_samples=2, do_postprocessing=1)
