@@ -9,8 +9,10 @@
 ## What does this project do?
 
 - This project **automatically groups HTML documents that look similar** when opened in a web browser. It does this by analyzing both their structure (based on HTML tag usage) and text content, combining these signals using a mix of machine learning and statistical analysis. Behind the scenes, it uses unsupervised clustering (DBSCAN) to detect patterns and group similar pages together — no labels or manual intervention needed.
-
+  
 - The core idea is to treat **each HTML page** as a vector of **tag frequencies**, compute Chi-squared distances to measure structural differences, and combine this with textual similarity (TF-IDF). The result is a good pipeline for organizing large sets of web pages into meaningful groups, with an UI Dashboard built for visual validation, post-processing, and heatmap-based analysis.
+
+- And yes — there's a dashboard! You can explore the results, check stats, and dig through logs in an intuitive UI. It makes the whole experience not just powerful, but also pretty fun.
 
 ---
 
