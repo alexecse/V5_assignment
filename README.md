@@ -1,7 +1,7 @@
-# 🔍 HTML Grouping Pipeline
+# HTML Grouping Pipeline
 
 - Automated grouping of HTML documents by structural similarity and textual similarity.   
-- This project uses Applied statistical analysis, with a great interest in scalability methods. 
+- This project uses Applied Statistical Analysis, with a great interest in scalability methods. 
 
 ---
 
@@ -44,7 +44,7 @@ python clean.py - for cleaning
 
 - [1. Theory and Methodology](#1-theory--methodology)
 - [2. Implementation](#2-implementation)
-- [3. Conclusions & Expanding](#3-conclusion--expansion)
+- [3. Conclusions & Expanding](#3-conclusions--future-work)
 
 ---
 
@@ -328,7 +328,7 @@ This optimized Chi-squared computation method makes it feasible to cluster large
 
 </details>
 
-## 2. Implementare
+## 2. Implementation
 
 ### Pipeline Architecture (aka what actually happens)
 
@@ -468,7 +468,8 @@ Here are some key aspects of the implementation that make this pipeline efficien
 
 ### How Could This Scale to 2000 HTML Files per Second?
 
-Veridion processes ~2000 HTML documents **per second** — this pipeline, in its current form, is not designed for that scale. To reach production-grade throughput, several architectural and algorithmic upgrades are required.
+Veridion processes ~2000 HTML documents **per second**. 
+In its current form, this pipeline is not designed for that scale. To reach production-grade throughput, several architectural and algorithmic upgrades are to be made.
 
 #### Problems in the current setup:
 
