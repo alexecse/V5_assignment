@@ -203,18 +203,16 @@ This creates a **categorical distribution** — and for that, **Chi-squared Dist
    Chi-squared is designed to measure dissimilarity between two **discrete distributions** — exactly what we get when we count HTML tags.
 
 2. **Normalization by total frequency**  
+   ![Chi-squared distance](images/Chi_squared_distance_formula.png)
    Its formula:
-   \[
-   \chi^2(x, y) = \frac{1}{2} \sum_{i=1}^{d} \frac{(x_i - y_i)^2}{x_i + y_i + \varepsilon}
-   \]
    - Highlights differences on **rare tags** more than frequent ones.
    - Reduces the impact of large raw counts that may dominate in simpler metrics.
 
-3. **Insensitive to absolute document size**  
+4. **Insensitive to absolute document size**  
    Two HTML files might have different tag counts (100 vs 10), but the same overall structure.  
    Chi-square captures **distributional similarity**, not raw volume.
 
-4. **Widely used in document analysis**  
+5. **Widely used in document analysis**  
    - Common in NLP and Bag-of-Words models  
    - Proven effective for unsupervised clustering of documents based on frequency features
 
@@ -259,13 +257,13 @@ To address this, we introduce a **vectorized implementation** of Chi-squared dis
 ---
 
 ### Chi-Squared Distance Formula
-Given two vectors \( \mathbf{x}, \mathbf{y} \in \mathbb{R}^d \), the Chi-squared distance is defined as:
+Given two vectors x, y in R^d, the Chi-squared distance is defined as:
 
-\[ \chi^2(\mathbf{x}, \mathbf{y}) = \frac{1}{2} \sum_{we=1}^{d} \frac{(x_i - y_i)^2}{x_i + y_i + \varepsilon} \]
+![Chi-squared distance](images/Chi_squared_distance_formula.png)
 
 Where:
-- \( x_i, y_i \) are the components of the vectors
-- \( \varepsilon \) is a small constant added to avoid division by zero
+-  x_i, y_i  are the components of the vectors
+- epsilon is a small constant added to avoid division by zero
 
 ---
 
