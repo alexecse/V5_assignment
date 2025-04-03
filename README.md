@@ -143,35 +143,13 @@ I tested two approaches for comparing HTML structures.
 
 ---
 
-#### Chi-squared + Absolute Frequencies
 
-**How it works:**
-- Each HTML file is represented as a vector of tag counts (e.g., `<div>` = 50).
-- Chi-squared distance measures dissimilarity between tag distributions.
-
-**Pros:**
-- Captures **how much** each tag is used, not just if it exists.
-- Great for distinguishing between structurally similar templates with different behaviors (e.g., script-heavy vs content-heavy).
-
-**Cons:**
-- Sensitive to file length differences.
-- Can overreact to rare tags used heavily in a single file.
-
----
-
-#### Cosine + Binary Presence (0/1)
-
-**How it works:**
-- Converts tag frequency to binary (tag present or not).
-- Uses Cosine similarity (angle between vectors).
-
-**Pros:**
-- More tolerant to frequency variation.
-- Works well if layout is similar and only tag presence matters.
-
-**Cons:**
-- Ignores **how often** tags are used.
-- Misses subtle structural differences between similar templates.
+| **Aspect**            | **Chi-squared + Frequency**                                       | **Cosine + Binary Presence**                                  |
+|-----------------------|-------------------------------------------------------------------|----------------------------------------------------------------|
+| **Representation**    | Vectors with tag counts (e.g., `<div>` = 50)                     | Binary vectors (1 = tag present, 0 = not present)              |
+| **Distance Metric**   | Chi-squared distance                                              | Cosine similarity                                              |
+| **Pros**              | - Captures **how often** each tag is used  <br> - Good for distinguishing structurally similar templates with different behaviors | - Tolerant to frequency variation <br> - Works well when layout is similar |
+| **Cons**              | - Sensitive to file length differences <br> - Rare tags can dominate the distance | - Ignores **tag frequency** <br> - Misses subtle structural differences |
 
 ---
 
