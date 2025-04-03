@@ -30,11 +30,10 @@ pip install -r requirements.txt
 
 ## Running
 
-run this command for generating the output/ statistics/ directories:
 ```bash
 python run.py
 ```
-run this command for an UI, with the output, stats, and logs:
+run those commands in different terminals for an UI, with the output, stats, and logs:
 ```bash
 python server_html.py
 streamlit run dashboard.py 
