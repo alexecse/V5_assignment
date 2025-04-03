@@ -10,6 +10,12 @@ import streamlit.components.v1 as components
 OUTPUT_DIR = "output"
 STATS_DIR = "statistics"
 
+def extract_tags_from_file(file_path):
+    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        soup = BeautifulSoup(f, 'lxml')
+        tags = [tag.name for tag in soup.find_all()]
+    return Counter(tags)
+
 def list_groups(output_root=OUTPUT_DIR):
     groups = {}
     for tier in os.listdir(output_root):
@@ -72,19 +78,30 @@ def main():
     with st.expander("Show tag heatmap"):
         display_heatmap(selected_tier)
 
-    # Tag stats section
-    with st.expander("Top 10 most frequent tags"):
+    st.markdown("### Select an HTML file to preview")
+    selected_file = st.selectbox("File", file_list)
+    selected_file_path = os.path.join(group_path, selected_file)
+
+    # Top tags side-by-side
+    with st.sidebar:
+        st.markdown("#### 📄 Top 5 tags in selected file")
+        tag_counter = extract_tags_from_file(selected_file_path)
+        top_tags = tag_counter.most_common(5)
+        df_file = pd.DataFrame(top_tags, columns=["Tag", "Occurrences"])[["Occurrences", "Tag"]]
+        st.dataframe(df_file, use_container_width=True, height=220)
+
+        st.markdown("#### 📁 Top 5 tags in group")
         tag_counter = extract_tags_from_files(file_paths)
-        top_tags = tag_counter.most_common(10)
-        for tag, count in top_tags:
-            st.markdown(f"`{tag}`: {count} occurrences")
+        top_tags = tag_counter.most_common(5)
+        df_group = pd.DataFrame(top_tags, columns=["Tag", "Occurrences"])[["Occurrences", "Tag"]]
+        st.dataframe(df_group, use_container_width=True, height=220)
 
-    # File selector
-    selected_file = st.selectbox("Select an HTML file to preview", file_list)
-    selected_file_path = os.path.join(tier_path, selected_file)
 
+    # Display page
     display_html_preview(selected_tier, selected_group, selected_file)
-    
+
+    # Logs section
+    st.markdown("### Postprocessing Logs")
     log_path = os.path.join(tier_path, "postprocessing.log")
     if os.path.exists(log_path):
         with open(log_path, "r", encoding="utf-8") as f:
@@ -103,11 +120,21 @@ def main():
     if os.path.exists(stats_path):
         st.markdown("### Postprocessing Statistics")
         df_stats = pd.read_csv(stats_path)
-        st.dataframe(df_stats, use_container_width=True)
-        st.download_button("Download stats", df_stats.to_csv(index=False), file_name="postprocessing_stats.csv")
+
+        # Redimensionăm tabelul doar cât trebuie
+        st.table(df_stats.style.set_table_styles([
+            {'selector': 'th', 'props': [('text-align', 'left')]},
+            {'selector': 'td', 'props': [('text-align', 'left')]}
+        ]))
+
+        st.download_button(
+            label="Download stats",
+            data=df_stats.to_csv(index=False),
+            file_name="postprocessing_stats.csv",
+            mime="text/csv"
+        )
     else:
         st.info("No postprocessing statistics file found for this group.")
-
 
 if __name__ == "__main__":
     main()

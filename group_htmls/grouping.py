@@ -8,8 +8,10 @@ import os
 import shutil
 from collections import defaultdict
 from tqdm import tqdm
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 from sklearn.cluster import DBSCAN
 from concurrent.futures import ProcessPoolExecutor
 
@@ -40,27 +42,27 @@ def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
     counters = parallel_extract_tag_frequencies(html_files)
     tag_matrix, tags = build_tag_matrix(counters)
 
-    # 2) Extract visible text content from HTML files
+    # Extract visible text content from HTML files
     texts = parallel_extract_texts(html_files)
 
-    # 3) Compute distance matrices based on tags and text
+    # 2) Compute distance matrices based on tags and text
     chi2_dist = chi2_distance_matrix_fast(tag_matrix)
     textual_dist = compute_textual_similarity(html_files, texts)
 
-    # 4) Dynamically combine tag-based and text-based distances
+    # Dynamically combine tag-based and text-based distances
     combined_dist = combine_distances_dynamic(chi2_dist, textual_dist)
 
-    # 5) Apply DBSCAN clustering on the combined distance matrix
+    # 3) Apply DBSCAN clustering on the combined distance matrix
     clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
     labels = clustering.fit_predict(combined_dist)
 
-    # 6) Optional: postprocess clustering to attach outliers & merge similar groups
+    # 4) Optional: postprocess clustering to attach outliers & merge similar groups
     if do_postprocessing:
         labels, stats, logs = postprocessing(labels, combined_dist, html_files)
         save_logs(logs, output_dir)
         save_stats(stats, output_dir)
 
-    # 7) Organize clustered files into output folders
+    # 5) Organize clustered files into output folders
     final_clusters = defaultdict(list)
     for idx, label in enumerate(labels):
         final_clusters[label].append(html_files[idx])
@@ -71,17 +73,21 @@ def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
         for file_path in files:
             shutil.copy(file_path, os.path.join(group_folder, os.path.basename(file_path)))
 
-    # 8) Summary
+    # Print summary
     print(f"\tPages grouped in {output_dir}: {len([k for k in final_clusters if k != -1])} groups, {len(final_clusters.get(-1, []))} stand-alone pages (outliers)")
 
-    # 9) Generate and save a heatmap showing tag frequency per HTML file
+    # 6) Generate and save a heatmap showing tag frequency per HTML file
     filenames = [os.path.basename(f) for f in html_files]
     cluster_labels = ['outlier' if lbl == -1 else f'group_{lbl}' for lbl in labels]
     y_labels = [f"{name} ({group})" for name, group in zip(filenames, cluster_labels)]
 
+    # Avoid log(0) by setting minimum visible frequency to 1
+    tag_matrix[tag_matrix == 0] = 1
+
     plt.figure(figsize=(14, max(6, len(y_labels) * 0.2)))
-    sns.heatmap(tag_matrix, cmap='YlGnBu', xticklabels=tags, yticklabels=y_labels)
-    plt.title("HTML Tag Frequency per File")
+    sns.heatmap(tag_matrix, cmap='YlGnBu', xticklabels=tags, yticklabels=y_labels,
+                norm=LogNorm(vmin=1, vmax=np.max(tag_matrix)))
+    plt.title("HTML Tag Frequency per File (Log Scale)")
     plt.xlabel("HTML Tags")
     plt.ylabel("Files")
     plt.yticks(rotation=0, fontsize=8)
