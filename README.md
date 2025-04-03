@@ -16,7 +16,7 @@
 
 ---
 
-## Installing
+## Installing (around 5 minutes)
 
 ```bash
 git clone https://github.com/alexecse/V5_assignment.git
