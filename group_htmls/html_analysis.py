@@ -60,6 +60,22 @@ def chi2_distance_matrix(tag_matrix, epsilon=1e-10):
 
     return D
 
+def chi2_distance_matrix_fast(tag_matrix, epsilon=1e-10):
+    # Vectorized Chi-squared distance matrix. 
+    # Input tag_matrix must be a NumPy array of shape (n_samples, n_features)
+    tag_matrix = tag_matrix.astype(np.float64)
+    n = tag_matrix.shape[0]
+    dist_matrix = np.zeros((n, n), dtype=np.float64)
+
+    for i in range(n):
+        xi = tag_matrix[i]
+        denom = xi + tag_matrix + epsilon  # shape: (n, d)
+        num = (xi - tag_matrix) ** 2       # shape: (n, d)
+        chi2 = 0.5 * np.sum(num / denom, axis=1)
+        dist_matrix[i, :] = chi2
+
+    return dist_matrix
+
 
 def combine_distances_dynamic(chi2_dist, textual_dist, alpha_range=(0.2, 0.8)):
     # Combines Chi-squared and textual distances dynamically based on Chi-squared value

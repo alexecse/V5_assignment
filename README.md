@@ -5,16 +5,16 @@
 
 ---
 
-## 📦 Ce face acest proiect?
+## Ce face acest proiect?
 
 - Parsează fișiere HTML și extrage trăsături structurale (taguri)
-- Le grupează automat folosind clustering nesupravegheat (DBSCAN)
+- Le grupează automat folosind clustering nesupravegheat (DBSCAN), pe baza unei distante statistice bazate pe Chi-patrat
 - Evaluează și vizualizează coerența grupurilor
 - Suportă extensii cu metrici textuali & vizuali (ex: TF-IDF, embeddings)
 
 ---
 
-## ⚙️ Instalare
+## Instalare
 
 ```bash
 git clone https://github.com/alexecse/V5_assignment.git
@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 ---
 
-## ▶️ Cum se rulează
+## How to run this project?
 
 ```bash
 python run.py

@@ -1,6 +1,7 @@
 from group_htmls.image_processing import image_embedding, generate_screenshot_if_missing
 from group_htmls.text_analysis import extract_text_content, compute_textual_similarity
-from group_htmls.html_analysis import extract_tag_frequency, build_tag_matrix, chi2_distance_matrix, combine_distances_dynamic
+from group_htmls.html_analysis import extract_tag_frequency, build_tag_matrix, combine_distances_dynamic
+from group_htmls.html_analysis import chi2_distance_matrix, chi2_distance_matrix_fast
 from group_htmls.postprocessing import postprocessing, save_logs, save_stats
 
 import os
@@ -43,7 +44,7 @@ def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
     texts = parallel_extract_texts(html_files)
 
     # 3) Compute distance matrices based on tags and text
-    chi2_dist = chi2_distance_matrix(tag_matrix)
+    chi2_dist = chi2_distance_matrix_fast(tag_matrix)
     textual_dist = compute_textual_similarity(html_files, texts)
 
     # 4) Dynamically combine tag-based and text-based distances
