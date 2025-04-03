@@ -19,6 +19,11 @@
 ```bash
 git clone https://github.com/alexecse/V5_assignment.git
 cd V5_assignment
+
+unzip clones.zip
+
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -27,7 +32,10 @@ pip install -r requirements.txt
 ## ▶️ Cum se rulează
 
 ```bash
-python src/main.py --input ./data/html_pages --output ./results
+python run.py
+python server_html.py
+streamlit run dashboard.py - for integrated output, stats, and logs in a dashboard
+python clean.py - for cleaning
 ```
 
 ---
