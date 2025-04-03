@@ -67,7 +67,7 @@ python clean.py - for cleaning
 
 ## This section is a theoretical approach on what can we do with statistics regarding HTML documents and data in general.
 
-Statistical tools and reasoning can significantly enhance one's ability to analyse a problem.
+Statistical tools and reasoning can significantly enhance one's ability to analyze a problem.
 
 ---
 
@@ -129,10 +129,11 @@ These tests can validate that groups are statistically different
   - textual: TF-IDF
   - visual embeddings: not much exploration done here, as I use it only in the postprocessing
 
-<details><summary> Why Chi-squared + Frequency (vs Cosine + Binarization)</summary>
-### Why Chi-squared + Frequency (vs Cosine + Binarization)
+<details><summary> Structural Analysis </summary>
 
-We tested two approaches for comparing HTML structures:
+### Why Chi-squared + Frequency? (vs Cosine + Binarization)
+
+I tested two approaches for comparing HTML structures.
 
 ---
 
@@ -168,11 +169,11 @@ We tested two approaches for comparing HTML structures:
 
 ---
 
-### 🧪 Real Results
+### Real Results
 
 | Tier     | Chi² + Frequency        | Cosine + Binary         |
 |----------|--------------------------|--------------------------|
-| Tier 1   | 7 groups, 9/101 outliers | 3 groups, 0 outliers     |
+| Tier 1   | 7 groups, 9 outliers     | 3 groups, 0 outliers     |
 | Tier 2   | 2 groups, 6 outliers     | 1 group, 0 outliers      |
 | Tier 3   | 5 groups, 4 outliers     | 1 group, 1 outlier       |
 | Tier 4   | 3 groups, 4 outliers     | 2 groups, 0 outliers     |
@@ -269,7 +270,7 @@ In this context:
 ### Fast Chi-Squared Distance Computation: Numerical Optimization
 
 ### Overview
-In the context of clustering HTML documents based on tag distributions, we use the **Chi-squared distance** as a dissimilarity metric. The original implementation involved a nested loop over all pairs of documents, which resulted in high computational complexity.
+In the context of clustering HTML documents based on tag distributions, I use the **Chi-squared distance** as a dissimilarity metric. The original implementation involved a nested loop over all pairs of documents, which resulted in high computational complexity.
 
 To address this, we introduce a **vectorized implementation** of Chi-squared distance using NumPy. This approach provides substantial performance gains, especially for large datasets.
 
@@ -278,7 +279,7 @@ To address this, we introduce a **vectorized implementation** of Chi-squared dis
 ### Chi-Squared Distance Formula
 Given two vectors \( \mathbf{x}, \mathbf{y} \in \mathbb{R}^d \), the Chi-squared distance is defined as:
 
-\[ \chi^2(\mathbf{x}, \mathbf{y}) = \frac{1}{2} \sum_{i=1}^{d} \frac{(x_i - y_i)^2}{x_i + y_i + \varepsilon} \]
+\[ \chi^2(\mathbf{x}, \mathbf{y}) = \frac{1}{2} \sum_{we=1}^{d} \frac{(x_i - y_i)^2}{x_i + y_i + \varepsilon} \]
 
 Where:
 - \( x_i, y_i \) are the components of the vectors
