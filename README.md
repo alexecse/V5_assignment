@@ -204,6 +204,7 @@ This creates a **categorical distribution** — and for that, **Chi-squared Dist
 
 2. **Normalization by total frequency**  
    ![Chi-squared distance](images/Chi_squared_distance_formula.png)
+   
    Its formula:
    - Highlights differences on **rare tags** more than frequent ones.
    - Reduces the impact of large raw counts that may dominate in simpler metrics.
