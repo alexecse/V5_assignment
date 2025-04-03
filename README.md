@@ -30,11 +30,18 @@ pip install -r requirements.txt
 
 ## Running
 
+run this command for generating the output/ statistics/ directories:
 ```bash
 python run.py
+```
+run this command for an UI, with the output, stats, and logs:
+```bash
 python server_html.py
-streamlit run dashboard.py - interface for the integrated output, stats, and logs in a dashboard
-python clean.py - for cleaning
+streamlit run dashboard.py 
+```
+run this command to clean output/ statistics/ screenshots/ directories:
+```bash
+python clean.py
 ```
 
 ---
