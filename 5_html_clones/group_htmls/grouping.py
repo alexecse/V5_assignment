@@ -1,5 +1,5 @@
 from group_htmls.image_processing import image_embedding, generate_screenshot_if_missing
-from group_htmls.text_analysis import extract_text_content, compute_textual_similarity, compute_semantic_similarity
+from group_htmls.text_analysis import extract_text_content, compute_textual_similarity
 from group_htmls.html_analysis import extract_tag_frequency, build_tag_matrix, chi2_distance_matrix, combine_distances_dynamic
 from group_htmls.postprocessing import postprocessing, save_logs, save_stats
 
@@ -10,16 +10,14 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.cluster import DBSCAN
-from concurrent.futures import ThreadPoolExecutor
-
+from concurrent.futures import ProcessPoolExecutor
 
 def parallel_extract_tag_frequencies(html_files):
-    with ThreadPoolExecutor() as executor:
+    with ProcessPoolExecutor() as executor:
         return list(tqdm(executor.map(extract_tag_frequency, html_files), total=len(html_files), desc="Extracting tag frequencies"))
 
-
 def parallel_extract_texts(html_files):
-    with ThreadPoolExecutor() as executor:
+    with ProcessPoolExecutor() as executor:
         return list(tqdm(executor.map(extract_text_content, html_files), total=len(html_files), desc="Extracting text content"))
 
 

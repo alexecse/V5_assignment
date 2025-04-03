@@ -201,6 +201,11 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 		elif diff <= 0.15:
 			log(f"!!! Consider lowering threshold slightly if you want it attached.")
 
+
+		log(f"[OUTLIER DEBUG] {filename} → Closest group: {closest_group}")
+		log(f"  - Avg distance to group: {min_dist:.4f}")
+		log(f"  - Threshold (attach):    {threshold_attach:.4f}")
+		
 		if min_dist <= threshold_attach:
 			log(f" - Attached to group {closest_group}\n")
 			clusters[closest_group].append(idx)

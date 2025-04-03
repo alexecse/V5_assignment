@@ -18,13 +18,3 @@ def compute_textual_similarity(html_files, texts):
     textual_dist = 1 - cosine_sim
     textual_dist[textual_dist < 0] = 0
     return textual_dist
-
-
-def compute_semantic_similarity(html_files):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    texts = [extract_text_content(path) for path in html_files]
-    embeddings = model.encode(texts, show_progress_bar=True)
-    cos_sim = cosine_similarity(embeddings)
-    textual_dist = 1 - cos_sim
-    textual_dist[textual_dist < 0] = 0
-    return textual_dist
