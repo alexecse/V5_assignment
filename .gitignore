@@ -50,5 +50,12 @@ pip-delete-this-directory.txt
 # Pytest
 .pytest_cache/
 
+# output and data files
+clones/
+__MACOSX/
+output/
+statistics/
+screenshots/
+
 # dotenv
 *.env
