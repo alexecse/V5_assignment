@@ -1,7 +1,7 @@
 # HTML Grouping Pipeline
 
 - Automated grouping of HTML documents by structural similarity and textual similarity.   
-- This project uses Applied Statistical Analysis, with a great interest in scalability methods. 
+- This project uses ML techniques and Applied Statistical Analysis, with a great interest in scalability methods. 
 
 ---
 
