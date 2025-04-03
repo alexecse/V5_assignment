@@ -36,9 +36,15 @@ pip install -r requirements.txt
 ```bash
 python run.py
 ```
-run those commands in different terminals for an UI, with the output, stats, and logs:
+run those commands in two different terminals for the UI - containing the output, stats, and logs:
+terminal 1:
 ```bash
+source venv/bin/activate
 python server_html.py
+```
+terminal 2:
+```bash
+source venv/bin/activate
 streamlit run dashboard.py 
 ```
 run this command to clean output/ statistics/ screenshots/ directories:
