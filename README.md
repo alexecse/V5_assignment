@@ -1,15 +1,16 @@
 # HTML Grouping Pipeline
 
-- Automated grouping of HTML documents by structural similarity and textual similarity.   
+## Objective
+- Automated grouping of HTML documents, which are similar from the perspective of a user who opens them in a web browser - by structural similarity and textual similarity.   
 - This project uses ML techniques and Applied Statistical Analysis, with a great interest in scalability methods. 
 
 ---
 
 ## What does this project do?
 
-- For each HTML document, the algorithm extracts the frequency of HTML tags, and treats them as structural features
-- Using unsupervised clustering (DBSCAN) we group those frequencies into groups, using the Fast Chi-squared distance (explained below)
-- Optional postprocessing for fine-tuning outlier integration into the formed groups, and even merging similar groups (using visual similarity)
+- This project automatically groups HTML documents based on structural and textual similarity. It uses machine learning and statistical analysis to analyze each HTML file's structure (via tag frequency) and text content, then clusters similar documents together using unsupervised learning (DBSCAN).
+
+- The core idea is to treat each HTML page as a vector of tag frequencies, compute Chi-squared distances to measure structural differences, and combine this with textual similarity (TF-IDF). The result is an extensible pipeline for organizing large sets of web pages into meaningful groups, with built-in support for visual validation, post-processing, and heatmap-based analysis.
 
 ---
 
