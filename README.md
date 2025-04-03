@@ -184,7 +184,7 @@ Cosine + binary overgeneralizes — fewer outliers, but also less useful groupin
 
 </details>
 
-### 📊 Structural Pattern Discovery
+### Structural Pattern Discovery
 
 Clustering decisions are supported by structural similarity across HTML tags, and backed by statistics.
 
