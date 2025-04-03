@@ -67,6 +67,15 @@ python clean.py - for cleaning
   - TF-IDF sau SBERT (text)
   - Vizual embedding (ex: CLIP, DINO)
 
+
+## 📊 Structural Pattern Discovery
+
+Clustering decisions are supported by structural similarity across HTML tags.
+
+![Heatmap](images/tier4/tier4_tag_frequency_heatmap.png)
+
+From the heatmap above, we observe distinct usage patterns across clusters. Some groups heavily use `form`, `input`, and `iframe`, while others rely more on `div`, `span`, and `script`, which influences structural distance calculations.
+
 <details><summary>Long live Numerical Methods: Fast Chi-Squared Distance Numerical Optimization</summary>
 
 # Fast Chi-Squared Distance Computation: Numerical Optimization
