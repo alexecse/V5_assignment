@@ -37,13 +37,13 @@ pip install -r requirements.txt
 python run.py
 ```
 run those commands in two different terminals for the UI - containing the output, stats, and logs:
-terminal 1:
 ```bash
+cd V5_assignment
 source venv/bin/activate
 python server_html.py
 ```
-terminal 2:
 ```bash
+cd V5_assignment
 source venv/bin/activate
 streamlit run dashboard.py 
 ```
