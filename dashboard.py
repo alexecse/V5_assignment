@@ -121,7 +121,7 @@ def main():
         st.markdown("### Postprocessing Statistics")
         df_stats = pd.read_csv(stats_path)
 
-        # Redimensionăm tabelul doar cât trebuie
+        # Resize
         st.table(df_stats.style.set_table_styles([
             {'selector': 'th', 'props': [('text-align', 'left')]},
             {'selector': 'td', 'props': [('text-align', 'left')]}
