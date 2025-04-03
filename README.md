@@ -17,8 +17,8 @@
 ## ⚙️ Instalare
 
 ```bash
-git clone https://github.com/username/html-grouping-pipeline.git
-cd html-grouping-pipeline
+git clone https://github.com/alexecse/V5_assignment.git
+cd V5_assignment
 pip install -r requirements.txt
 ```
 
