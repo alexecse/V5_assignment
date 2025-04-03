@@ -16,8 +16,8 @@ preprocess = transforms.Compose([
 ])
 
 def image_embedding(path):
-    # Extracts a feature vector from a screenshot image using EfficientNet-B0.
-    # It returns a np.ndarray: 1280-dimensional feature vector as NumPy array.
+    # Extracts a feature vector from a screenshot image using EfficientNet-B0
+    # It returns a np.ndarray: 1280-dimensional feature vector as NumPy array
     try:
         img = Image.open(path).convert("RGB")
         img_tensor = preprocess(img).unsqueeze(0)
@@ -34,7 +34,7 @@ def image_embedding(path):
 
 
 def generate_screenshot_if_missing(html_path, output_folder="screenshots"):
-    # Generates a full-page screenshot for a given HTML file using Playwright if it doesn't already exist.
+    # Generates a full-page screenshot for a given HTML file using Playwright if it doesn't already exist
     
     os.makedirs(output_folder, exist_ok=True)
 

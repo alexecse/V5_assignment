@@ -9,6 +9,8 @@ from group_htmls.image_processing import generate_screenshot_if_missing, image_e
 def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=0):
 	print("\tPostprocessing...")
 	n = len(html_files)
+	
+	# Group each HTML file index under its assigned cluster label
 	clusters = defaultdict(list)
 	for idx, label in enumerate(labels):
 		clusters[label].append(idx)
@@ -23,6 +25,8 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 
 	outlier_indices = clusters.get(-1, [])
 	assigned_outliers = []
+
+	# Initialize statistics for reporting
 	stats = {
 		"initial_outliers": len(outlier_indices),
 		"attached_outliers": 0,
@@ -32,11 +36,13 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 		"total_groups_after": 0
 	}
 	
+	# Print info if outliers exist
 	if outlier_indices:
 		log("Outliers found: " + str([os.path.basename(html_files[i]) for i in outlier_indices]))
 	else:
 		log("No outliers found.")
 
+	# Try to attach each outlier to the closest valid group if within threshold
 	for idx in outlier_indices:
 		dists = []
 		for group_label, members in clusters.items():
@@ -69,6 +75,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 		else:
 			log(f" - Kept as outlier\n")
 
+	# Update remaining outliers list
 	remaining_outliers = [idx for idx in outlier_indices if idx not in assigned_outliers]
 	stats["final_outliers"] = len(remaining_outliers)
 	if remaining_outliers:
@@ -76,10 +83,12 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 	elif -1 in clusters:
 		del clusters[-1]
 
+	# Prepare for merging similar groups
 	group_labels = [l for l in clusters if l != -1]
 	merged = set()
 	label_mapping = {}
 
+	# Compare every pair of groups to decide merging
 	for i in range(len(group_labels)):
 		label_i = group_labels[i]
 		if label_i in merged:
@@ -95,6 +104,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 
 			log(f"[MERGE DEBUG] Group {label_i} - Group {label_j} -> avg_dist = {avg_dist:.4f}")
 
+			# If groups are close enough, compare visual similarity
 			if avg_dist <= threshold_merge:
 				html_path1 = html_files[members_i[0]]
 				html_path2 = html_files[members_j[0]]
@@ -124,6 +134,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 			else:
 				log(f"  X Not merged (distance > limit)\n")
 
+	# Reassign cluster labels to be continuous and clean
 	new_labels = np.full(n, -1)
 	current_label = 0
 	for old_label in sorted(clusters.keys()):
@@ -142,6 +153,7 @@ def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, thre
 
 
 def save_logs(log_messages, output_dir):
+	# Save log messages to file in output directory
 	os.makedirs(output_dir, exist_ok=True)
 	log_file = os.path.join(output_dir, "postprocessing.log")
 	with open(log_file, "w", encoding="utf-8") as f:
@@ -149,6 +161,7 @@ def save_logs(log_messages, output_dir):
 
 
 def save_stats(stats, output_dir):
+	# Save numeric stats to a CSV file in output directory
 	os.makedirs(output_dir, exist_ok=True)
 	stats_file = os.path.join(output_dir, "postprocessing_stats.csv")
 	with open(stats_file, "w", newline="", encoding="utf-8") as csvfile:

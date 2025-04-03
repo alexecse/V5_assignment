@@ -88,7 +88,6 @@ def group_similar_htmls(directory, eps, min_samples, do_postprocessing=1):
     plt.savefig(os.path.join(stats_dir, f"{tier_name}_tag_frequency_heatmap.png"))
     plt.close()
 
-
 if __name__ == "__main__":
     for tier in ['./clones/tier1', './clones/tier2', './clones/tier3', './clones/tier4']:
         print(f"Grouping for: {tier}")
