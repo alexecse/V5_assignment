@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from group_htmls.image_processing import generate_screenshot_if_missing, image_embedding
 
 
-def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=1):
+def postprocessing(labels, distance_matrix, html_files, threshold_merge=25, threshold_attach=5, can_print=0):
 	print("\tPostprocessing...")
 	n = len(html_files)
 	clusters = defaultdict(list)
