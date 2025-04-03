@@ -8,9 +8,9 @@
 
 ## What does this project do?
 
-- This project automatically groups HTML documents based on structural and textual similarity. It uses machine learning and statistical analysis to analyze each HTML file's structure (via tag frequency) and text content, then clusters similar documents together using unsupervised learning (DBSCAN).
+- This project **automatically groups HTML documents that look similar** when opened in a web browser. It does this by analyzing both their structure (based on HTML tag usage) and text content, combining these signals using a mix of machine learning and statistical analysis. Behind the scenes, it uses unsupervised clustering (DBSCAN) to detect patterns and group similar pages together — no labels or manual intervention needed.
 
-- The core idea is to treat each HTML page as a vector of tag frequencies, compute Chi-squared distances to measure structural differences, and combine this with textual similarity (TF-IDF). The result is an extensible pipeline for organizing large sets of web pages into meaningful groups, with built-in support for visual validation, post-processing, and heatmap-based analysis.
+- The core idea is to treat **each HTML page** as a vector of **tag frequencies**, compute Chi-squared distances to measure structural differences, and combine this with textual similarity (TF-IDF). The result is a good pipeline for organizing large sets of web pages into meaningful groups, with an UI Dashboard built for visual validation, post-processing, and heatmap-based analysis.
 
 ---
 
@@ -61,10 +61,7 @@ python clean.py
 
 - Automated grouping of visually similar Web pages, by performing different kinds of analysis on their attached HTML document
 - Rigourous evaluation of the methods used for structural similarity
-- Exploration and research through different metrics:
-  - structural 
-  - textual
-  - visual
+- Exploration and research through different metrics: structural, textual and visual
 - Explore different approaches of clustering
   - DBSCAN
   - HDBSCAN
@@ -129,7 +126,7 @@ These tests can validate that groups are statistically different
 
 ### Approach
 
-- An HTML document is a ierarhical structure, thus we can try and perform statitical analyisis on it
+- An HTML document is a **ierarhical structure**, thus we can try and perform statitical analyisis on it
 - Tested metrics:
   - structural: Chi-squared Distance + frequency matrices (no. of appereances / tag)
   - simplified structural: Cosine Distance + Binary frequency matrices (tag =1 or no tag = 0)
@@ -164,7 +161,7 @@ I tested two approaches for comparing HTML structures.
 | Tier 4   | 3 groups, 4 outliers     | 2 groups, 0 outliers     |
 
 **Interpretation:**  
-Chi-square + frequency gives more precise, meaningful clusters.  
+**Chi-square + frequency** gives more **precise, meaningful clusters**.  
 Cosine + binary overgeneralizes — fewer outliers, but also less useful grouping.
 
 </details>
@@ -196,7 +193,7 @@ These visual patterns validate the use of structural features and support the ef
 ### Why use the Chi-squared Distance?
 
 When comparing the **structure of HTML documents**, we represent each file as a frequency vector of HTML tags (e.g. `{div: 63, p: 32, span: 14, img: 0, ...}`).  
-This creates a **categorical distribution** — and for that, **Chi-squared Distance (χ²)** is the perfect fit.
+This creates a **categorical distribution** — and for that, **Chi-squared Distance** is the perfect fit.
 
 ---
 
